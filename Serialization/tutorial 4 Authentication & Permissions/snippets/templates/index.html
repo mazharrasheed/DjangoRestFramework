@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+  <title>Snippets</title>
+  <!-- Include CSRF token -->
+  <meta name="csrf-token" content="{{ csrf_token }}">
+</head>
+
+<body>
+
+  <div class="container content-center" id="user-profile">
+    
+    <div class="row col-5 m-5">
+      <h1> <a href="http://127.0.0.1:8000/snippets/">Snippets</a></h1>
+    <h2 class="">Create User</h2>
+    <form id="update-user-form">
+      {% csrf_token %}
+      <input type="hidden" id="user-id" name="user-id"> <!-- Hidden field for user ID -->
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required><br><br>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required><br><br>
+      <input type="submit" value="Submit">
+    </form>
+ 
+  </div>
+
+  <h1>User Profile</h1>
+  <div class="row col-12">
+    <!-- User data will be rendered here -->
+    <table class="table table-bordered border-primary">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Title</th>
+          <th scope="col">Code</th>
+          <th scope="col">Linenos</th>
+          <th scope="col">Language</th>
+          <th scope="col">Style</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody id="user-info">
+
+      </tbody>
+    </table>
+
+
+  </div>
+  </div>
+
+
+
+  <!-- Include jQuery library -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // Function to render user data in the template
+
+    function renderUserInfo(snippets) {
+      var userInfoHtml = ''; // Initialize an empty string to concatenate HTML content
+
+      for (var i = 0; i < snippets.length; i++) {
+        console.log(snippets)
+        var snippetData = snippets[i];
+        userInfoHtml += `
+    <tr>
+      <th scope="row">${snippetData.id}</th>
+      <td>${snippetData.title}</td>
+      <td>${snippetData.code}</td>
+      <td>${snippetData.linenos}</td>
+      <td>${snippetData.language}</td>
+      <td>${snippetData.style}</td>
+      <td> <button class="edit-user-btn" data-user-id="${snippetData.id}">Edit</button></td>
+    </tr>
+            <!-- Add more user data fields as needed -->
+        `;
+      }
+
+    //   "id": 1,
+    //     "title": "",
+    //     "code": "foo = \"bar\"\n",
+    //     "linenos": false,
+    //     "language": "python",
+    //     "style": "friendly"
+
+      // After the loop, set the concatenated HTML content to #user-info
+      $('#user-info').html(userInfoHtml);
+    }
+
+    // Function to populate form fields with user data
+    function populateForm(userData) {
+      $('#user-id').val(userData.id); // Set user ID in hidden field
+      $('#username').val(userData.username);
+      $('#email').val(userData.email);
+    }
+
+    // jQuery AJAX request to fetch user data
+
+    $.ajax({
+      url: "http://127.0.0.1:8000/snippets/", // Replace with your API endpoint
+
+      type: 'GET',
+      success: function (data) {
+        // Render user data in the template
+        renderUserInfo(data);
+      },
+      error: function (xhr, textStatus, errorThrown) {
+        console.error('Error:', errorThrown);
+      }
+    });
+
+    // Event listener for "Edit" button click
+    $(document).on('click', '.edit-user-btn', function () {
+      var userId = $(this).data('user-id');
+      $.ajax({
+        url: `/http://127.0.0.1:8000/snippets/${userId}/`, // Replace with your API endpoint for fetching user by ID
+        type: 'GET',
+        success: function (userData) {
+          // Populate form fields with user data
+          populateForm(userData);
+        },
+        error: function (xhr, textStatus, errorThrown) {
+          console.error('Error:', errorThrown);
+        }
+      });
+    });
+
+    // jQuery AJAX request to update user
+    $('#update-user-form').submit(function (event) {
+      event.preventDefault(); // Prevent form submission
+      var formData = $(this).serialize(); // Serialize form data
+
+      var userId = $('#user-id').val(); // Get user ID from hidden field
+
+      $.ajax({
+        url: `/users/${userId}/`, // Replace with your API endpoint for updating user
+        type: 'PUT',
+        headers: {
+          'X-CSRFToken': $('meta[name="csrf-token"]').attr('content') // Add CSRF token header
+        },
+        data: formData,
+        success: function (data) {
+          console.log('User updated successfully:', data);
+          // Re-fetch user data and render in the template
+          $.ajax({
+            url: "/users/", // Replace with your API endpoint
+            type: 'GET',
+            success: function (data) {
+              // Render user data in the template
+              renderUserInfo(data);
+            },
+            error: function (xhr, textStatus, errorThrown) {
+              console.error('Error:', errorThrown);
+            }
+          });
+        },
+        error: function (xhr, textStatus, errorThrown) {
+          console.error('Error:', errorThrown);
+        }
+      });
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+    integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+    crossorigin="anonymous"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile</title>
+</head>
+
+<body>
+
+  <a href="/users/">Users</a>
+  <div id="user-profile">
+    <h1>User Profile</h1>
+    <div id="user-info">
+      <!-- User data will be rendered here -->
+    </div>
+  </div>
+
+  <div id="user-form">
+    <h2>Create User</h2>
+    <form id="create-user-form">
+      {% csrf_token %}
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required><br><br>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required><br><br>
+      <input type="submit" value="Submit">
+    </form>
+  </div>
+
+  <!-- Include jQuery library -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // Function to render user data in the template
+
+    function renderUserInfo(user) {
+      var userInfoHtml = ''; // Initialize an empty string to concatenate HTML content
+
+      for (var i = 0; i < user.results.length; i++) {
+        console.log(user.results[i])
+        var userData = user.results[i];
+        userInfoHtml += `
+            <p><strong>ID.:</strong> ${userData.id}</p>
+            <a href="/"><p><strong>Name:</strong> ${userData.username}</p></a>
+            <p><strong>Email:</strong> ${userData.email}</p>
+            <!-- Add more user data fields as needed -->
+        `;
+      }
+
+      // After the loop, set the concatenated HTML content to #user-info
+      $('#user-info').html(userInfoHtml);
+    }
+
+    // jQuery AJAX request to fetch user data
+    $.ajax({
+      url: "/users/",  // Replace with your API endpoint
+      type: 'GET',
+      success: function (data) {
+        // Render user data in the template
+        renderUserInfo(data);
+      },
+      error: function (xhr, textStatus, errorThrown) {
+        console.error('Error:', errorThrown);
+      }
+    });
+
+    // jQuery AJAX request to create user
+    $('#create-user-form').submit(function (event) {
+      event.preventDefault();  // Prevent form submission
+      var formData = $(this).serialize();  // Serialize form data
+
+      $.ajax({
+        url: "/users/2/",  // Replace with your API endpoint
+        type: 'POST',
+        headers: {
+          'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')  // Add CSRF token header
+        },
+        data: formData,
+        success: function (data) {
+          console.log('User created successfully:', data);
+          // Optionally, render the new user data in the template
+        },
+        error: function (xhr, textStatus, errorThrown) {
+          console.error('Error:', errorThrown);
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

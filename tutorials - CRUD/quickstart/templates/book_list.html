@@ -1,0 +1,147 @@
+<!-- books.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <button id="create-book">Create Book</button>
+    <button id="book_list">Delete Book</button>
+    <h1>Books</h1>
+   
+    
+    <!-- List all books -->
+    <div id="book-list">
+        <!-- Book list will be displayed here -->
+    </div>
+
+    <!-- Form for creating/updating a book -->
+    <div id="book-form">
+        <!-- Book form will be displayed here -->
+    </div>
+
+    <!-- Modal for confirming deletion -->
+    <div id="confirm-modal" style="display: none;">
+        <p>Are you sure you want to delete "<span id="delete-book-title"></span>"?</p>
+        <button id="confirm-delete">Delete</button>
+        <button id="cancel-delete">Cancel</button>
+    </div>
+
+    <script>
+        // Function to fetch and display all books
+        function fetchBooks() {
+            $.get('/books/', function(data) {
+        
+                var bookListHtml = '';
+                $.each(data, function(index, book) {
+                    bookListHtml += `<div>
+                                        <span>${book.title}</span>
+                                        <button class="edit-book" data-id="${book.id}">Edit</button>
+                                        <button class="delete-book" data-id="${book.id}">Delete</button>
+                                     </div>`;
+                });
+                $('#book-list').html(bookListHtml);
+            });
+        }
+
+        // Function to show book form for creation or update
+        function showBookForm(bookId=null) {
+            var url = '/book/create/';
+            var method = 'POST';
+            var title = 'Create Book';
+            var data = {};
+            if (bookId) {
+                url += bookId + '/';
+                method = 'PUT';
+                title = 'Update Book';
+                data1 = {title: $('#title').val(), author: $('#author').val(), description: $('#description').val()};
+                console.log(data1,'fgdfgfdg')
+            }
+            $('#book-form').html(`<h2>${title}</h2>
+                                  <input type="text" id="title" placeholder="Title" value="">
+                                  <input type="text" id="author" placeholder="Author" value="">
+                                  <textarea id="description" placeholder="Description"></textarea>
+                                  <button id="save-book">Save</button>
+                                  <button id="cancel-form">Cancel</button>`);
+
+            // Pre-fill form fields if updating
+            if (bookId) {
+                $.get(url, function(data) {
+                    $('#title').val(data.title);
+                    $('#author').val(data.author);
+                    $('#description').val(data.description);
+                });
+            }
+
+            // Save book
+            $('#save-book').click(function() {
+                $.ajax({
+                    url: url,
+                    method: method,
+                    contentType: 'application/json',
+                    data: JSON.stringify(data) ,
+                    success: function() {
+                        fetchBooks();
+                        $('#book-form').empty();
+                    console.log(data)
+                    }
+                });
+            });
+
+            // Cancel form
+            $('#cancel-form').click(function() {
+                $('#book-form').empty();
+            });
+        }
+
+        // Function to show confirm delete modal
+        function showConfirmModal(bookId, bookTitle) {
+            $('#delete-book-title').text(bookTitle);
+            $('#confirm-modal').show();
+
+            // Confirm delete
+            $('#confirm-delete').click(function() {
+                $.ajax({
+                    url: `/api/books/${bookId}/`,
+                    method: 'DELETE',
+                    success: function() {
+                        fetchBooks();
+                        $('#confirm-modal').hide();
+                    }
+                });
+            });
+
+            // Cancel delete
+            $('#cancel-delete').click(function() {
+                $('#confirm-modal').hide();
+            });
+        }
+
+        $(document).ready(function() {
+            // Initial fetch of books
+            fetchBooks();
+
+            // Create button click event
+            $('#create-book').click(function() {
+                showBookForm();
+            });
+
+            // Edit button click event
+            $('#book-list').on('click', '.edit-book', function() {
+                var bookId = $(this).data('id');
+                showBookForm(bookId);
+            });
+
+            // Delete button click event
+            $('#book-list').on('click', '.delete-book', function() {
+                var bookId = $(this).data('id');
+                var bookTitle = $(this).closest('div').find('span').text();
+                showConfirmModal(bookId, bookTitle);
+            });
+        });
+    </script>
+</body>
+</html>
